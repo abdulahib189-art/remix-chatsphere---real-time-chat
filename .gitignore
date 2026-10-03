@@ -1,4 +1,4 @@
-node_modules/
+﻿node_modules/
 build/
 dist/
 coverage/
@@ -6,9 +6,3 @@ coverage/
 *.log
 .env*
 !.env.example
-
-# Local data
-*.db
-*.db-journal
-uploads/*
-!uploads/.gitkeep
