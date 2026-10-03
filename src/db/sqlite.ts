@@ -1,4 +1,5 @@
 import { createClient } from '@libsql/client';
+import fs from 'fs';
 import path from 'path';
 import {
   User,
@@ -15,7 +16,15 @@ import {
 } from '../types.js';
 import { hashPasswordForStorage, normalizePasswordForStorage } from '../lib/auth.js';
 
-const dbPath = path.join(process.cwd(), 'chatsphere.db');
+// DATA_DIR points at a persistent volume in production; defaults to the project root locally.
+export const dataDir = process.env.DATA_DIR || process.cwd();
+fs.mkdirSync(dataDir, { recursive: true });
+const dbPath = path.join(dataDir, 'chatsphere.db');
+// On first boot with an empty volume, seed it with the database bundled in the repo.
+const bundledDbPath = path.join(process.cwd(), 'chatsphere.db');
+if (!fs.existsSync(dbPath) && dbPath !== bundledDbPath && fs.existsSync(bundledDbPath)) {
+  fs.copyFileSync(bundledDbPath, dbPath);
+}
 export const db = createClient({
   url: `file:${dbPath}`,
 });

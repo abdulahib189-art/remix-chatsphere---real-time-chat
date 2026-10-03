@@ -41,7 +41,7 @@ import {
   lostFoundRepo,
   notificationRepo,
 } from './src/db/sqlite.js';
-import { sanitizeUserForClient } from './src/db/sqlite.js';
+import { sanitizeUserForClient, dataDir } from './src/db/sqlite.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -99,9 +99,14 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Setup file uploads storage
-const uploadsDir = path.join(process.cwd(), 'uploads');
+const uploadsDir = path.join(dataDir, 'uploads');
+const bundledUploadsDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
+  // Seed a fresh volume with the uploads bundled in the repo.
+  if (uploadsDir !== bundledUploadsDir && fs.existsSync(bundledUploadsDir)) {
+    fs.cpSync(bundledUploadsDir, uploadsDir, { recursive: true });
+  }
 }
 app.use('/uploads', express.static(uploadsDir));
 
