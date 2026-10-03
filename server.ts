@@ -2112,8 +2112,9 @@ app.get('/api/admin/dashboard', requireAdminUser, async (req, res) => {
     const onlineUsers = allUsers.filter((u) => u.onlineStatus === 'online').length;
     const pendingReports = allReports.filter((r) => r.status === 'pending').length;
     const suspendedAccounts = allUsers.filter((u) => u.isSuspended || u.isBanned).length;
-    const newUsersToday =
-      allUsers.filter((u) => new Date(u.createdAt).toDateString() === new Date().toDateString()).length || 1;
+    const newUsersToday = allUsers.filter(
+      (u) => new Date(u.createdAt).toDateString() === new Date().toDateString()
+    ).length;
     const systemAlerts = pendingReports;
 
     const categories = ['Spam', 'Harassment', 'Fake account', 'Hate/abusive content', 'Scam', 'Inappropriate content', 'Other'];
@@ -2122,17 +2123,43 @@ app.get('/api/admin/dashboard', requireAdminUser, async (req, res) => {
       count: allReports.filter((r) => r.reason === cat).length,
     }));
 
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const dauTrend = days.map((day, idx) => ({
-      date: day,
-      dau: Math.max(3, activeUsers + (idx % 3)),
-      newUsers: Math.max(1, Math.floor(newUsersToday / 2)),
-    }));
+    // Real activity for the last 7 days, computed from stored messages and registrations.
+    const userIds = new Set(allUsers.map((u) => u.id));
+    const since = new Date();
+    since.setHours(0, 0, 0, 0);
+    since.setDate(since.getDate() - 29);
+    const recentMessages = await messageRepo.getActivitySince(since.toISOString());
+    const userMessages = recentMessages.filter((m) => userIds.has(m.senderId));
+    const dayKey = (iso: string) => new Date(iso).toDateString();
 
-    const messageVolumeTrend = days.map((day, idx) => ({
-      date: day,
-      messages: 120 + idx * 45,
-    }));
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - (6 - i));
+      return d;
+    });
+    const dauTrend = last7Days.map((d) => {
+      const key = d.toDateString();
+      return {
+        date: d.toLocaleDateString('en-US', { weekday: 'short' }),
+        dau: new Set(userMessages.filter((m) => dayKey(m.createdAt) === key).map((m) => m.senderId)).size,
+        newUsers: allUsers.filter((u) => dayKey(u.createdAt) === key).length,
+      };
+    });
+    const messageVolumeTrend = last7Days.map((d) => {
+      const key = d.toDateString();
+      return {
+        date: d.toLocaleDateString('en-US', { weekday: 'short' }),
+        messages: recentMessages.filter((m) => dayKey(m.createdAt) === key).length,
+      };
+    });
+
+    const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+    const dau = new Set(
+      userMessages.filter((m) => new Date(m.createdAt).getTime() >= dayAgo).map((m) => m.senderId)
+    ).size;
+    const mau = new Set(userMessages.map((m) => m.senderId)).size;
+    const totalMessages = await messageRepo.countAll();
 
     res.json({
       overview: {
@@ -2146,10 +2173,10 @@ app.get('/api/admin/dashboard', requireAdminUser, async (req, res) => {
       },
       liveActivity: logs,
       analytics: {
-        dau: activeUsers,
-        mau: totalUsers,
+        dau,
+        mau,
         newRegistrationsToday: newUsersToday,
-        avgSessionDuration: '24 mins',
+        totalMessages,
         dauTrend,
         messageVolumeTrend,
         reportsCategoryDistribution,
@@ -2170,7 +2197,7 @@ app.get('/api/admin/users', requireAdminUser, async (req, res) => {
         const msgCount = await messageRepo.countByUser(u.id);
         const repCount = await reportRepo.countByTargetUser(u.id);
         return {
-          ...u,
+          ...sanitizeUserForClient(u),
           messagesCount: msgCount,
           reportsCount: repCount,
         };

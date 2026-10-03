@@ -25,7 +25,7 @@ import { MessageSquare, ShieldCheck, Lock } from 'lucide-react';
 
 const ChatAppInner: React.FC = () => {
   const { currentUser, loading } = useAuth();
-  const { activeConversation, setNewChatOpen } = useChat();
+  const { activeConversation, setNewChatOpen, adminModalOpen } = useChat();
 
   if (loading) {
     return (
@@ -42,7 +42,8 @@ const ChatAppInner: React.FC = () => {
     return <AuthScreen />;
   }
 
-  if (currentUser.role === 'admin') {
+  // Admins land on the dashboard; closing it shows the regular chat UI (reopen from the sidebar).
+  if (currentUser.role === 'admin' && adminModalOpen) {
     return <AdminModal />;
   }
 

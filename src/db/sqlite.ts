@@ -1320,6 +1320,19 @@ export const messageRepo = {
     });
     return Number(res.rows[0]?.cnt ?? 0);
   },
+
+  async countAll(): Promise<number> {
+    const res = await db.execute('SELECT COUNT(*) as cnt FROM messages');
+    return Number(res.rows[0]?.cnt ?? 0);
+  },
+
+  async getActivitySince(sinceISO: string): Promise<{ senderId: string; createdAt: string }[]> {
+    const res = await db.execute({
+      sql: 'SELECT sender_id, created_at FROM messages WHERE created_at >= ?',
+      args: [sinceISO],
+    });
+    return res.rows.map((row) => ({ senderId: String(row.sender_id), createdAt: String(row.created_at) }));
+  },
 };
 
 // 4. Conversation Repository

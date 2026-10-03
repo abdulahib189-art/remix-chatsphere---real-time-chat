@@ -56,7 +56,7 @@ import { api } from '../services/api';
 type DashboardTab = 'overview' | 'users' | 'reports' | 'messages' | 'analytics';
 
 export const AdminModal: React.FC = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
   const { adminModalOpen, setAdminModalOpen } = useChat();
 
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
@@ -77,7 +77,7 @@ export const AdminModal: React.FC = () => {
     dau: 0,
     mau: 0,
     newRegistrationsToday: 0,
-    avgSessionDuration: '0 min',
+    totalMessages: 0,
     dauTrend: [],
     messageVolumeTrend: [],
     reportsCategoryDistribution: [],
@@ -103,9 +103,11 @@ export const AdminModal: React.FC = () => {
   const [msgContent, setMsgContent] = useState<string>('');
   const [sendingNotice, setSendingNotice] = useState<boolean>(false);
 
-  const loadDashboardData = async () => {
+  // Only the first load shows the full-screen spinner; later refreshes update in place
+  // so open panels (like the user detail dialog) stay mounted.
+  const loadDashboardData = async (showSpinner = false) => {
     try {
-      setLoading(true);
+      if (showSpinner) setLoading(true);
       const data = await api.getAdminDashboardData();
       setOverview(data.overview);
       setLiveActivity(data.liveActivity || []);
@@ -125,7 +127,7 @@ export const AdminModal: React.FC = () => {
 
   useEffect(() => {
     if (adminModalOpen) {
-      loadDashboardData();
+      loadDashboardData(true);
     }
   }, [adminModalOpen]);
 
@@ -245,8 +247,21 @@ export const AdminModal: React.FC = () => {
             </button>
 
             <button
+              onClick={() => {
+                setAdminModalOpen(false);
+                logout();
+              }}
+              className="p-2 text-red-300 hover:text-white bg-slate-900 hover:bg-red-500/30 rounded-xl border border-slate-800 transition text-xs flex items-center gap-1.5"
+              title="Log out"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
+
+            <button
               onClick={() => setAdminModalOpen(false)}
               className="p-2 text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-800 rounded-xl border border-slate-800 transition"
+              title="Close dashboard and open chats"
             >
               <X className="w-5 h-5" />
             </button>
@@ -1099,25 +1114,25 @@ export const AdminModal: React.FC = () => {
                 <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl">
                   <p className="text-xs text-slate-400">DAU (Daily Active Users)</p>
                   <p className="text-2xl font-black text-amber-400 mt-1">{analytics.dau}</p>
-                  <p className="text-[10px] text-emerald-400 mt-1">Active within 24h</p>
+                  <p className="text-[10px] text-emerald-400 mt-1">Users who sent messages in last 24h</p>
                 </div>
 
                 <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl">
                   <p className="text-xs text-slate-400">MAU (Monthly Active Users)</p>
                   <p className="text-2xl font-black text-blue-400 mt-1">{analytics.mau}</p>
-                  <p className="text-[10px] text-blue-400/80 mt-1">30-day active pool</p>
+                  <p className="text-[10px] text-blue-400/80 mt-1">Users who sent messages in last 30 days</p>
                 </div>
 
                 <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl">
                   <p className="text-xs text-slate-400">New Registrations Today</p>
                   <p className="text-2xl font-black text-emerald-400 mt-1">{analytics.newRegistrationsToday}</p>
-                  <p className="text-[10px] text-emerald-400/80 mt-1">+100% vs yesterday</p>
+                  <p className="text-[10px] text-emerald-400/80 mt-1">Accounts created since midnight</p>
                 </div>
 
                 <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl">
-                  <p className="text-xs text-slate-400">Avg. Session Duration</p>
-                  <p className="text-2xl font-black text-purple-300 mt-1">{analytics.avgSessionDuration}</p>
-                  <p className="text-[10px] text-purple-400/80 mt-1">High engagement rate</p>
+                  <p className="text-xs text-slate-400">Total Messages</p>
+                  <p className="text-2xl font-black text-purple-300 mt-1">{analytics.totalMessages}</p>
+                  <p className="text-[10px] text-purple-400/80 mt-1">All messages stored in the database</p>
                 </div>
               </div>
 

@@ -146,7 +146,7 @@ export interface UserAnalyticsData {
   dau: number;
   mau: number;
   newRegistrationsToday: number;
-  avgSessionDuration: string;
+  totalMessages: number;
   dauTrend: { date: string; dau: number; newUsers: number }[];
   messageVolumeTrend: { date: string; messages: number }[];
   reportsCategoryDistribution: { category: string; count: number }[];
