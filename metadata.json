@@ -1,0 +1,11 @@
+{
+  "name": "Remix ChatSphere - Real-Time Chat",
+  "description": "A feature-rich real-time chat application with voice notes, group chats, media sharing, reactions, presence, and video calling.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
