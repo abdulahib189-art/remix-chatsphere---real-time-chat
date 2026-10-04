@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: chatsphere
+    runtime: node
+    plan: free
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+    # To keep the database and uploads across restarts/redeploys, switch to a
+    # paid plan (e.g. `plan: starter`) and uncomment the disk + DATA_DIR below.
+    # disk:
+    #   name: chatsphere-data
+    #   mountPath: /var/data
+    #   sizeGB: 1
+    #   - key: DATA_DIR
+    #     value: /var/data
